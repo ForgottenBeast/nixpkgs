@@ -18,30 +18,7 @@
   lapack,
 
   # Python dependencies
-  numpy,
-  boto3,
-  colorama,
-  datasets,
-  evaluate,
-  gitignore-parser,
-  ipykernel,
-  llama-index-core,
-  llama-index-embeddings-huggingface,
-  llama-index-readers-file,
-  msgpack,
-  nbconvert,
-  ollama,
-  openai,
-  pathspec,
-  pdfplumber,
-  protobuf,
-  psutil,
-  pymupdf,
-  pypdf2,
-  pypdfium2,
-  requests,
-  sentence-transformers,
-
+python313Packages,
   # Test dependencies
   pytestCheckHook,
   pytest-asyncio,
@@ -126,7 +103,7 @@ in buildPythonPackage rec {
     lapack
   ];
 
-  dependencies = [
+  dependencies = with python313Packages;[
     numpy
     boto3
     colorama
