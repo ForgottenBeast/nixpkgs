@@ -74,7 +74,7 @@ in
         lib.types.submodule {
           options = {
             key = lib.mkOption {
-              type = lib.types.path;
+              type = lib.types.externalPath;
               description = ''
                 Path to the ED25519 secret key for this frontend onion service,
                 in Tor's `hs_ed25519_secret_key` format
@@ -84,12 +84,19 @@ in
                 A privileged `ExecStartPre` step copies the file into a
                 runtime directory owned by the `onionbalance` user; the
                 original path is never read by the daemon directly.
+
+                ::: {.warning}
+                Use a quoted string path (e.g. `"/run/secrets/ob.key"`) rather
+                than a Nix path literal, to prevent the key from being copied
+                into the world-readable Nix store.
+                :::
               '';
               example = "/run/agenix/ob-frontend.key";
             };
 
             instances = lib.mkOption {
               description = "Backend onion service instances to balance across.";
+              default = [ ];
               type = lib.types.listOf (
                 lib.types.submodule {
                   options = {
@@ -151,6 +158,7 @@ in
       requires = [ "tor.service" ];
       after = [ "tor.service" ];
       wantedBy = [ "multi-user.target" ];
+      restartTriggers = [ configFile ];
 
       serviceConfig = {
         Type = "simple";
@@ -172,10 +180,20 @@ in
         RestartSec = "30s";
 
         # Hardening — mirrors tor.nix where applicable.
+        AmbientCapabilities = [ "" ];
+        CapabilityBoundingSet = [ "" ];
+        # ProtectClock= adds DeviceAllow=char-rtc r without this explicit deny.
+        DeviceAllow = "";
+        LockPersonality = true;
+        # MemoryDenyWriteExecute must NOT be set: Python's cffi (used by the
+        # cryptography library) requires anonymous writable+executable mappings.
         NoNewPrivileges = true;
         PrivateDevices = true;
         PrivateMounts = true;
         PrivateTmp = true;
+        # OnionBalance never binds any ports, so PrivateUsers is always safe.
+        PrivateUsers = true;
+        ProcSubset = "pid";
         ProtectClock = true;
         ProtectControlGroups = true;
         ProtectHome = true;
@@ -186,9 +204,6 @@ in
         ProtectProc = "invisible";
         ProtectSystem = "strict";
         RemoveIPC = true;
-        LockPersonality = true;
-        MemoryDenyWriteExecute = true;
-        ProcSubset = "pid";
         RestrictAddressFamilies = [
           "AF_UNIX"
           "AF_INET"

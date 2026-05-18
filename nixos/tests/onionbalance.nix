@@ -38,10 +38,10 @@ with open(sys.argv[1], "wb") as f:
 PYEOF
   '';
 
-  # A syntactically valid v3 onion address that does not correspond to a real
-  # service.  OnionBalance will fail to fetch its descriptor (expected in
-  # a test without a full Tor network) but will not crash.
-  fakeBackend = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.onion";
+  # A syntactically valid v3 onion address (56 uppercase base32 chars) that
+  # does not correspond to a real service.  OnionBalance will fail to fetch its
+  # descriptor (expected without a full Tor network) but must not crash.
+  fakeBackend = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA.onion";
 in
 {
   name = "onionbalance";
@@ -75,9 +75,10 @@ in
     # The control socket must exist once tor is up.
     machine.wait_until_succeeds("test -S /run/tor/control")
 
-    # OnionBalance must have connected to the tor control port.
+    # OnionBalance must have connected to the Tor control port.
+    # stem logs "Controller opened" once the control connection is established.
     machine.wait_until_succeeds(
-        "journalctl -u onionbalance.service | grep -qi 'connected to tor'"
+        "journalctl -u onionbalance.service | grep -qiE 'controller opened|connected to tor control'"
     )
 
     # Verify the systemd security hardening score (informational).
